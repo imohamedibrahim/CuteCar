@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-public class CharacterMovementController : MonoBehaviour {
-    GameObject fpCar;
+public class CharacterMovementController: MonoBehaviour {
+    GameObject fpCarTransform;
     GameObject wheels;
     List<GameObject> wheel = new List<GameObject>();
     List<WheelCollider> rearWheel = new List<WheelCollider>();
@@ -14,13 +14,25 @@ public class CharacterMovementController : MonoBehaviour {
     public float horizontalInput = 1;
     public float verticalInput = 1;
     private float steerAngle;
+    float signFlagForSteer;
+    bool steerFlag;
+    public InputField inputTorque;
+    public InputField inputSteer;
+    public Vector3 centreOfMass;
+    private int reset;
+    public int reset_value;
+    private float screenCentre;
     private void Start()
     {
-        fpCar = CharacterControllerManager.singletonInstance.characterInstance;
-        wheels = Utils.GetChildWithTag(fpCar, "Wheels");
+        screenCentre = Screen.width*0.5f;
+        fpCarTransform = CharacterControllerManager.singletonInstance.characterInstance;
+        wheels = Utils.GetChildWithTag(fpCarTransform, "Wheels");
         frontWheel = Utils.GetWheelCollidersWithTag(wheels, "FrontWheel");
         rearWheel = Utils.GetWheelCollidersWithTag(wheels, "RearWheel");
         steerAngle = 0;
+        signFlagForSteer = 0;
+        steerFlag = false;
+        reset = 0; 
     }
 
     private void Accelerate()
@@ -28,20 +40,58 @@ public class CharacterMovementController : MonoBehaviour {
         foreach (WheelCollider _tmp in rearWheel)
         {
 
-            _tmp.motorTorque = 700;
+            _tmp.motorTorque = motorForce;
         }
     }
     private void FixedUpdate()
     {
+        fpCarTransform.GetComponent<Rigidbody>().centerOfMass = centreOfMass;
+        motorForce = float.Parse(inputTorque.text);
+        maxSteerAngle = float.Parse(inputSteer.text);
         Accelerate();
-        Steer(maxSteerAngle);
+        DetectAndApplyTouch();
     }
 
+    public void DetectAndApplyTouch()
+    {
+        if (Input.touchCount > 0)
+        {
+            Touch firstTouch = Input.GetTouch(0);
+            if (firstTouch.phase == TouchPhase.Began)
+            {
+                if (firstTouch.position.x > screenCentre)
+                {
+                    if (signFlagForSteer != 1)
+                    {
+                        steerAngle = 0;
+                        signFlagForSteer = 1;
+                    }
+                    SteerHelper();
+                }
+                if (firstTouch.position.x < screenCentre)
+                {
+                    if(signFlagForSteer != -1)
+                    {
+                        steerAngle = 0;
+                        signFlagForSteer = -1;
+                    }
+                    SteerHelper();
+                }
+            }
+        }
+        else
+        {
+            steerAngle = 0;
+            signFlagForSteer = 0;
+            Steer(steerAngle);
+        }
+    }
+    
     public void TurnLeft()
     {
-        Steer(-maxSteerAngle);
-        StartCoroutine(wait());
-        Steer(0);
+        reset = 0;
+        Steer(-maxSteerAngle*1);
+        
     }
 
     private void Steer(float _angle)
@@ -54,33 +104,30 @@ public class CharacterMovementController : MonoBehaviour {
 
     public void PointerEnterOnLeft()
     {
-        SteerHelper(-1,true);
+        signFlagForSteer = -1;
+        steerFlag = true;
     }
 
-    private void SteerHelper(float _signFlagForSteer,bool _steerFlag)
+    private void SteerHelper()
     {
-        if (_steerFlag && steerAngle < 1)
+        if (steerAngle < 1)
         {
             steerAngle = steerAngle + 0.2f;
         }
-        Steer(_signFlagForSteer*steerAngle);
+        Steer(signFlagForSteer*steerAngle);
     }
 
-    public void PointerExitOnLeft()
+    public void PointerExit()
     {
         steerAngle = 0;
+        steerFlag = false;
         Steer(steerAngle);
     }
 
     public void PointerEnterOnRight()
     {
-        SteerHelper(1,true);
-    }
-
-    public void PointerExitOnRight()
-    {
-        steerAngle = 0;
-        Steer(steerAngle);
+        steerFlag = true;
+        signFlagForSteer = 1;
     }
 
     IEnumerator wait()
@@ -90,6 +137,7 @@ public class CharacterMovementController : MonoBehaviour {
 
     public void TurnRight()
     {
-        Steer(maxSteerAngle);
+        reset = 0;
+        Steer(maxSteerAngle*1);
     }
 }

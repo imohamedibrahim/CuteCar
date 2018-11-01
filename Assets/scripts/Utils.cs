@@ -28,6 +28,29 @@ public class Utils : MonoBehaviour {
         }
         return tmpList;
     }
+    public static GameObject GetGameObjectWithName(List<GameObject> gameObjects , string nameToFind)
+    {
+        GameObject _gameObjectWithName = null;
+        foreach (GameObject _tmp in gameObjects)
+        {
+            if (_tmp.name.Equals(nameToFind))
+            {
+                _gameObjectWithName = _tmp;
+                break;
+            }
+        }
+        return _gameObjectWithName;
+    }
+    public static List<GameObject> GetVehicle(GameObject vehiclesGroup)
+    {
+        List<GameObject> _vehicleGroup = new List<GameObject>();
+        foreach (Transform _tmpTransform in vehiclesGroup.transform)
+        {
+          //  Debug.Log(_tmpTransform.gameObject);
+            _vehicleGroup.Add(_tmpTransform.gameObject);
+        }
+        return _vehicleGroup;
+    }
 
     public static List<WheelCollider> GetWheelCollidersWithTag(GameObject tmp,string tag)
     {
